@@ -3,31 +3,41 @@ session_start();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn = new mysqli("localhost", "root", "", "tourism_db");
     if ($conn->connect_error) die("Connection failed");
+}
 
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT id, full_name, password FROM users WHERE email = ?");
+    $sql = "SELECT * FROM users WHERE email = ?";
+    $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $email);
     $stmt->execute();
-    $stmt->store_result();
-    
-    if ($stmt->num_rows === 1) {
-        $stmt->bind_result($id, $name, $hashed_password);
-        $stmt->fetch();
+    $result = $stmt->get_result();
 
-        if (password_verify($password, $hashed_password)) {
-            $_SESSION['user_id'] = $id;
-            $_SESSION['user_name'] = $name;
-            header("Location: dashboard.php");
+    if ($result->num_rows == 1) {
+        $row = $result->fetch_assoc();
+
+        // verify password
+        if (password_verify($password, $row['password'])) {
+            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['user_email'] = $row['email'];
+            $_SESSION['user_name'] = $row['full_name'];
+            $_SESSION['usertype'] = $row['usertype'];
+
+            // redirect based on usertype
+            if ($row['usertype'] === "admin") {
+                header("Location: admin_dashboard.php");
+            } else {
+                header("Location: dashboard.php");
+            }
             exit;
         } else {
-            $error = "Invalid password";
+            echo "❌ Invalid password!";
         }
     } else {
-        $error = "Account not found";
+        echo "❌ User not found!";
     }
-    $stmt->close();
 }
 ?>
 
