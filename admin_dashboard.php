@@ -21,44 +21,133 @@ if ($conn->connect_error) {
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="style.css"> <!-- Reuse your main CSS -->
     <style>
-        .container {
-            width: 90%;
-            margin: auto;
-            padding: 20px;
-        }
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        h2 { color: #2c3e50; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        th { background: #f5f5f5; }
-        input, button {
-            padding: 8px 12px;
-            margin: 5px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-        }
-        button {
-            background: #2c3e50;
-            color: #fff;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #34495e;
-        }
+       body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(to right, #e0f7fa, #fce4ec);
+    color: #2c3e50;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    padding: 40px 20px;
+}
+
+h1 {
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #ff6f61, #ffca28);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+p {
+    text-align: center;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: linear-gradient(135deg, #ffffff, #f1f8e9);
+    border-radius: 16px;
+    padding: 25px;
+    margin: 30px 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+h2 {
+    font-size: 1.8em;
+    margin-bottom: 15px;
+    background: linear-gradient(to right, #42a5f5, #66bb6a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+th {
+    background: linear-gradient(to right, #81d4fa, #aed581);
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+td {
+    background-color: #fafafa;
+}
+
+input, button {
+    padding: 10px 14px;
+    margin: 8px 5px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+}
+
+input {
+    background: #fff;
+}
+
+button {
+    background: linear-gradient(to right, #ff8a65, #f06292);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: linear-gradient(to right, #f44336, #e91e63);
+}
+
+a {
+    color: #00796b;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* last ko chart */
+
+
+button {
+  background: linear-gradient(to right, #42a5f5, #66bb6a);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1em;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(to right, #1e88e5, #43a047);
+}
     </style>
 </head>
 <body>
@@ -138,6 +227,83 @@ if ($conn->connect_error) {
         }
         ?>
     </div>
+
+<div class="card">
+  <h2>📊 Most Ordered Activities</h2>
+  <p>Click the button to visualize top services based on order frequency.</p>
+
+  <?php
+  $activityData = [];
+  $query = "SELECT activity_name, COUNT(*) as total FROM orders GROUP BY activity_name ORDER BY total DESC";
+  $result = $conn->query($query);
+
+  if ($result && $result->num_rows > 0) {
+      while ($row = $result->fetch_assoc()) {
+          $activityData[] = [
+              'activity' => $row['activity_name'],
+              'count' => $row['total']
+          ];
+      }
+  }
+  ?>
+
+  <button onclick="generateChart()">Generate Chart</button>
+  <canvas id="dssChart" width="400" height="200" style="margin-top: 30px;"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    function generateChart() {
+      const ctx = document.getElementById('dssChart').getContext('2d');
+
+      const labels = <?php echo json_encode(array_column($activityData, 'activity')); ?>;
+      const data = <?php echo json_encode(array_column($activityData, 'count')); ?>;
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Orders per Activity',
+            data: data,
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.6)',
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(255, 206, 86, 0.6)',
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(153, 102, 255, 0.6)',
+              'rgba(255, 159, 64, 0.6)'
+            ],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Most Ordered Activities',
+              color: '#333',
+              font: { size: 18 }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#333' }
+            },
+            x: {
+              ticks: { color: '#333' }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</div>
+
+
+
 
     <div style="text-align:center; margin-top:20px;">
         <a href="logout.php">Logout</a>
